@@ -1,0 +1,30 @@
+# === Python-specific files ===
+__pycache__/
+*.pyc
+*.pyo
+
+# === Environment Secrets (MUST BE HERE) ===
+.env
+
+# === Dependency/Packaging Files ===
+# Logs and other files created by pip/setuptools
+pip-log.txt
+*.egg-info/
+dist/
+build/
+
+# === Virtual Environment Folders ===
+# Standard Python venv/virtualenv folders
+.venv/
+venv/
+env/
+
+# Conda/Mamba specific files and folders
+.conda/
+.mamba/
+# If Mamba creates any large environment folders within your project:
+boson-duo-env/ 
+
+# === OS/IDE files ===
+.DS_Store      # macOS
+.vscode/       # Visual Studio Code settings (often local)

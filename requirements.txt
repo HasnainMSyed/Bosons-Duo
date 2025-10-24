@@ -1,0 +1,9 @@
+# General LLM/AI Libraries
+torch
+transformers
+python-dotenv
+sentencepiece
+
+# UI/Demo Framework (Choose one: Gradio is fast for hackathons)
+gradio
+
