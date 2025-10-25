@@ -1,4 +1,3 @@
-# Simple test.py in your root folder
 from core.agent_manager import AgentManager
 
 manager = AgentManager()
