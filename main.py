@@ -51,14 +51,14 @@ with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue")) as app:
 
             with gr.Column(scale=2):  # Central column for inputs
                 agent_1_description = gr.Textbox(
-                    label="Descibbe Agent 1",
-                    placeholder="e.g., You are an environmentalist that...",
+                    label="Describe Agent 1",
+                    placeholder="e.g., You are an environmental authoritarian",
                     lines=3,
                     elem_id="topic-input-box",
                 )
 
                 agent_2_description = gr.Textbox(
-                    label="Descibbe Agent 2",
+                    label="Describe Agent 2",
                     placeholder="e.g., You are a person advocating for degrowth",
                     lines=3,
                     elem_id="topic-input-box",
