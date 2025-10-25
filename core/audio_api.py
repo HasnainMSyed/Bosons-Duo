@@ -1,7 +1,11 @@
 import os
+import time
 import wave
 import base64
 import openai
+import numpy as np
+import sounddevice as sd
+import soundfile as sf
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -30,6 +34,52 @@ BOSON_AUDIO_ENDPOINT = os.getenv("BOSON_AUDIO_ENDPOINT")
 CLIENT = openai.Client(
     api_key=BOSON_API_KEY, base_url=BOSON_AUDIO_ENDPOINT, max_retries=2, timeout=30
 )
+
+
+class VoiceRecorder:
+    def __init__(self, sample_rate=44100):
+        self.sample_rate = sample_rate
+        self.is_recording = False
+        self.audio_data = []
+        self.stream = None
+
+    def start_recording(self):
+        if self.is_recording:
+            print("Already recording!")
+            return
+
+        self.is_recording = True
+        self.audio_data = []
+
+        def callback(indata, frames, time, status):
+            if self.is_recording:
+                self.audio_data.append(indata.copy())
+
+        self.stream = sd.InputStream(
+            samplerate=self.sample_rate, channels=1, callback=callback, dtype="float32"
+        )
+        self.stream.start()
+        print("Recording started...")
+
+    def stop_recording(self, path="audio_references/recording.wav"):
+        if not self.is_recording:
+            print("Not currently recording")
+            return
+
+        self.is_recording = False
+        time.sleep(0.1)  # let last bit finish
+
+        if self.stream:
+            self.stream.stop()
+            self.stream.close()
+
+        if self.audio_data:
+            audio_array = np.concatenate(self.audio_data, axis=0)
+            sf.write(path, audio_array, self.sample_rate)
+            return path
+
+        print("No audio data")
+        return None
 
 
 def encode_audio_to_base64(file_path: str) -> str:
@@ -157,12 +207,18 @@ def clone_audio(reference_name, output_path, dialogue_text):
 
 
 if __name__ == "__main__":
-    generate_dialogue_audio(
-        "Hello everyone, I am James Davis, the instructor for MAT195 Calculus. We will skipp all sections related to biology because biologists are so bad at math that they think multiplication and division are the same thing",
-        "audio_references/audio_out.wav",
-        DEFAULT_VOICE_MABEL,
-        audio_speed_factor=1.1,
-    )
+    recorder = VoiceRecorder()
+
+    recorder.start_recording()
+    time.sleep(4)
+    filename = recorder.stop_recording("audio_references/my_recording.wav")
+
+    # generate_dialogue_audio(
+    #     "Hello everyone, I am James Davis, the instructor for MAT195 Calculus. We will skipp all sections related to biology because biologists are so bad at math that they think multiplication and division are the same thing",
+    #     "audio_references/audio_out.wav",
+    #     DEFAULT_VOICE_MABEL,
+    #     audio_speed_factor=1.1,
+    # )
     # clone_audio(
     #     CHARACATER_JAMES_DAVIS,
     #     "audio_references/test_clone.wav",
