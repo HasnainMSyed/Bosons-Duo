@@ -1,0 +1,4 @@
+
+def debate() -> None:
+    pass
+
