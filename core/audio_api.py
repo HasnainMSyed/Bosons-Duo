@@ -134,6 +134,9 @@ def clone_audio(reference_path, reference_transcript, output_path, dialogue_text
     audio_b64 = resp.choices[0].message.audio.data
     open(output_path, "wb").write(base64.b64decode(audio_b64))
 
+def generate_cloned_speech():
+    pass
+
 
 if __name__ == "__main__":
     # generate_dialogue_audio(
