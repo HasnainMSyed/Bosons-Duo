@@ -29,7 +29,9 @@ DEFAULT_VOICE_MABEL = "mabel"
 BOSON_API_KEY = os.getenv("BOSON_API_KEY")
 BOSON_AUDIO_ENDPOINT = os.getenv("BOSON_AUDIO_ENDPOINT")
 
-CLIENT = openai.Client(api_key=BOSON_API_KEY, base_url=BASE_URL)
+CLIENT = openai.Client(
+    api_key=BOSON_API_KEY, base_url=BOSON_AUDIO_ENDPOINT, max_retries=2, timeout=30
+)
 
 
 def encode_audio_to_base64(file_path: str) -> str:
@@ -86,17 +88,13 @@ def generate_dialogue_audio(
 
 
 def transcribe_audio(audio_path: str) -> str:
-    try:
-        file_format = audio_path.split(".")[-1].lower()
-        if file_format not in ['wav', 'mp3', 'ogg', 'flac']:
-             raise ValueError(f"Unsupported audio format: {file_format}")
-        
-        with open(audio_path, "rb") as audio_file:
-            audio_data = audio_file.read()
-            audio_base64 = encode_audio_to_base64(audio_path)
-    
-        messages_payload: List[ChatCompletionMessageParam] = [
-            {"role": "system", "content": "Transcribe this audio file accurately."},
+    audio_base64 = encode_audio_to_base64(audio_path)
+    file_format = audio_path.split(".")[-1]
+
+    response = CLIENT.chat.completions.create(
+        model="higgs-audio-understanding-Hackathon",
+        messages=[
+            {"role": "system", "content": "Transcribe the COMPLETE audio for me."},
             {
                 "role": "user",
                 "content": [
@@ -113,7 +111,7 @@ def transcribe_audio(audio_path: str) -> str:
         max_completion_tokens=6000,
     )
 
-        return response.choices[0].message.content
+    return response.choices[0].message.content
 
 
 def clone_audio(reference_name, output_path, dialogue_text):
@@ -151,16 +149,13 @@ def clone_audio(reference_name, output_path, dialogue_text):
     audio_b64 = resp.choices[0].message.audio.data
     open(output_path, "wb").write(base64.b64decode(audio_b64))
 
-def generate_cloned_speech():
-    pass
-
 
 if __name__ == "__main__":
     generate_dialogue_audio(
-        "Hello everyone, I am James Davis, the instructor for MAT195 Calculus. We will skipp all sections related to biology because biologists are soooooo bad at math that they think multiplication and division are the same thing",
+        "Hello everyone, I am James Davis, the instructor for MAT195 Calculus. We will skipp all sections related to biology because biologists are so bad at math that they think multiplication and division are the same thing",
         "audio_references/audio_out.wav",
         DEFAULT_VOICE_MABEL,
-        audio_speed_factor=1.1
+        audio_speed_factor=1.1,
     )
     # clone_audio(
     #     CHARACATER_JAMES_DAVIS,
