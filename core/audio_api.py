@@ -3,18 +3,19 @@ import wave
 import base64
 import openai
 from dotenv import load_dotenv
+from typing import List, Dict, Any, Optional
+from openai.types.chat import ChatCompletionMessageParam
 
 load_dotenv()
 
 # --- Configuration ---
-BOSON_API_KEY = os.getenv("BOSON_API_KEY")
-# Assuming the hackathon provides a dedicated endpoint for Higgs Audio V2
-BOSON_AUDIO_ENDPOINT = os.getenv("BOSON_AUDIO_ENDPOINT")
+BOSON_API_KEY = os.getenv("BOSON_API_KEY") # Get API Keys
+BASE_URL = "https://hackathon.boson.ai/v1"
 
-CLIENT = openai.Client(api_key=BOSON_API_KEY, base_url=BOSON_AUDIO_ENDPOINT)
+CLIENT = openai.Client(api_key=BOSON_API_KEY, base_url=BASE_URL)
 
 
-def encode_audio_to_base64(file_path: str) -> str:
+def encode_audio_to_base64(file_path: str) -> Optional[str]:
     """Reads a local audio file and encodes it as a base64 string for API payload."""
     try:
         with open(file_path, "rb") as audio_file:
@@ -23,6 +24,9 @@ def encode_audio_to_base64(file_path: str) -> str:
     except FileNotFoundError:
         print(f"Error: Audio reference file not found at {file_path}")
         return ""
+    except Exception as e:
+        print(f"Error encoding audio file {file_path}: {e}")
+        return None
 
 
 # def generate_dialogue_audio(dialogue_text: str, audio_file_path: str) -> None:
@@ -50,13 +54,17 @@ def encode_audio_to_base64(file_path: str) -> str:
 #         wav.writeframes(pcm_data)
 
 def transcribe_audio(audio_path: str) -> str:
-    audio_base64 = encode_audio_to_base64(audio_path)
-    file_format = audio_path.split(".")[-1]
-
-    response = CLIENT.chat.completions.create(
-        model="higgs-audio-understanding-Hackathon",
-        messages=[
-            {"role": "system", "content": "Transcribe the COMPLETE audio for me."},
+    try:
+        file_format = audio_path.split(".")[-1].lower()
+        if file_format not in ['wav', 'mp3', 'ogg', 'flac']:
+             raise ValueError(f"Unsupported audio format: {file_format}")
+        
+        with open(audio_path, "rb") as audio_file:
+            audio_data = audio_file.read()
+            audio_base64 = encode_audio_to_base64(audio_path)
+    
+        messages_payload: List[ChatCompletionMessageParam] = [
+            {"role": "system", "content": "Transcribe this audio file accurately."},
             {
                 "role": "user",
                 "content": [
@@ -69,13 +77,28 @@ def transcribe_audio(audio_path: str) -> str:
                     },
                 ],
             },
-        ],
-        max_completion_tokens=6000,
-    )
+        ]
+                
+        response = CLIENT.chat.completions.create(
+                model="higgs-audio-understanding-Hackathon",
+                messages=messages_payload,
+                max_completion_tokens=6000,
+                temperature=0.5
+            )
 
-    print(response.choices[0].message.content)
+        print(response.choices[0].message.content)
 
-    return response.choices[0].message.content
+        return response.choices[0].message.content
+
+    except openai.APIError as e:
+        print(f"OpenAI API Error during transcription: {e}")
+        return f"[Transcription API Error: {e}]"
+    except FileNotFoundError:
+        print(f"Error: Audio file not found at {audio_path}")
+        return "[Transcription Error: File not found]"
+    except Exception as e:
+        print(f"An unexpected error occurred during transcription: {e}")
+        return f"[Transcription Unexpected Error: {e}]"
 
 
 def clone_audio(reference_path, reference_transcript, output_path, dialogue_text):
