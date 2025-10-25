@@ -3,8 +3,6 @@ import wave
 import base64
 import openai
 from dotenv import load_dotenv
-from typing import List, Dict, Any, Optional
-from openai.types.chat import ChatCompletionMessageParam
 
 load_dotenv()
 
@@ -43,16 +41,28 @@ def encode_audio_to_base64(file_path: str) -> str:
         return ""
 
 
+def write_wav(
+    path: str, num_channels: int, sample_width: int, frame_rate: int, frames: int
+) -> None:
+    with wave.open(path, "wb") as out_wav:
+        out_wav.setnchannels(num_channels)
+        out_wav.setsampwidth(sample_width)
+        out_wav.setframerate(frame_rate)
+        out_wav.writeframes(frames)
+
+
 def adjust_audio_speed(path: str, speed_factor: float):
     with wave.open(path, "rb") as wav:
         params = wav.getparams()
         frames = wav.readframes(params.nframes)
 
-    with wave.open(path, "wb") as out_wav:
-        out_wav.setnchannels(params.nchannels)
-        out_wav.setsampwidth(params.sampwidth)
-        out_wav.setframerate(int(params.framerate * speed_factor))
-        out_wav.writeframes(frames)
+    write_wav(
+        path,
+        params.nchannels,
+        params.sampwidth,
+        int(params.framerate * speed_factor),
+        frames,
+    )
 
 
 def generate_dialogue_audio(
@@ -78,11 +88,7 @@ def generate_dialogue_audio(
 
     pcm_data = response.content
 
-    with wave.open(audio_file_path, "wb") as wav:
-        wav.setnchannels(num_channels)
-        wav.setsampwidth(sample_width)
-        wav.setframerate(sample_rate)
-        wav.writeframes(pcm_data)
+    write_wav(audio_file_path, num_channels, sample_width, sample_rate, pcm_data)
 
     adjust_audio_speed(audio_file_path, audio_speed_factor)
 
