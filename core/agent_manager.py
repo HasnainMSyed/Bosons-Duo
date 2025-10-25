@@ -1,4 +1,4 @@
-from .llm_api import LLMAgent
+from llm_api import LLMAgent
 from typing import List
 
 LLM_MODEL_NAME = "Qwen3-32B-non-thinking-Hackathon"
@@ -56,16 +56,7 @@ class AgentManager:
 
     def get_full_dialogue_text(self) -> str:
         """Returns the entire dialogue text formatted for easy reading."""
-        history = ""
-        for i in range(len(self.dialogue_history)):
-            history += "\n"
-            if i%2 == 0:
-                history += "Agent A: "
-            else:
-                history += "Agent B: "
-            
-            history += self.dialogue_history[i]
-        return history
+        return "\n".join(self.dialogue_history)
 
 if __name__ == "__main__":
     promptA = "an AI expert that is hopeful for its future and satisfied with its development"
