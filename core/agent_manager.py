@@ -7,13 +7,16 @@ class AgentManager:
     """Manages the two conversational agents and runs the dialogue."""
     
     # Define Agent Personas to showcase emotional range and distinct voices
-    PERSONA_A = "You are agent A, and you are an AI expert that is hopeful for its future and satisfied with its development."
-    PERSONA_B = "You are agent B, and you are an AI expert that is concerned for humanity and the way AI grows."
+    PERSONA_A = "You are agent A, and you are "
+    PERSONA_B = "You are agent B, and you are "
     
-    def __init__(self):
+    def __init__(self, prompt1, prompt2):
+        self.PERSONA_A += prompt1
+        self.PERSONA_B += prompt2
+
         # Initialize the two distinct agents
-        self.agent_a = LLMAgent(name="Agent A (Optimist)", persona=self.PERSONA_A, model=LLM_MODEL_NAME)
-        self.agent_b = LLMAgent(name="Agent B (Concerned)", persona=self.PERSONA_B, model=LLM_MODEL_NAME)
+        self.agent_a = LLMAgent(name="Agent A", persona=self.PERSONA_A, model=LLM_MODEL_NAME)
+        self.agent_b = LLMAgent(name="Agent B", persona=self.PERSONA_B, model=LLM_MODEL_NAME)
         
         # Track the current speaking agent
         self.current_speaker = self.agent_a
@@ -36,7 +39,7 @@ class AgentManager:
         listener = self.agent_b if self.current_speaker == self.agent_a else self.agent_a
 
         # The prompt for the current speaker is the previous speaker's output (or the user's input)
-        turn_prompt = f"Previous Speaker said: {prompt_text}. Respond to them and continue the argument."
+        turn_prompt = f"Previous Speaker said: {prompt_text}. Respond to them in at most 150 words and continue the argument."
 
         # 1. Generate the response
         response_text = self.current_speaker.generate_response(turn_prompt)
@@ -53,10 +56,21 @@ class AgentManager:
 
     def get_full_dialogue_text(self) -> str:
         """Returns the entire dialogue text formatted for easy reading."""
-        return "\n".join(self.dialogue_history)
+        history = ""
+        for i in range(len(self.dialogue_history)):
+            history += "\n"
+            if i%2 == 0:
+                history += "Agent A: "
+            else:
+                history += "Agent B: "
+            
+            history += self.dialogue_history[i]
+        return history
 
 if __name__ == "__main__":
-    manager = AgentManager()
+    promptA = "an AI expert that is hopeful for its future and satisfied with its development"
+    promptB = "an AI expert that is concerned for humanity and the way AI grows"
+    manager = AgentManager(promptA, promptB)
     
     # 2. Define the initial topic
     initial_topic = "The rapid development of AGI: Is it a net benefit or a catastrophic risk to human employment and creativity?"
