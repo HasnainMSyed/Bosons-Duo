@@ -207,18 +207,18 @@ def clone_audio(reference_name, output_path, dialogue_text):
 
 
 if __name__ == "__main__":
-    recorder = VoiceRecorder()
+    # recorder = VoiceRecorder()
 
-    recorder.start_recording()
-    time.sleep(4)
-    filename = recorder.stop_recording("audio_references/my_recording.wav")
+    # recorder.start_recording()
+    # time.sleep(4)
+    # filename = recorder.stop_recording("audio_references/my_recording.wav")
 
-    # generate_dialogue_audio(
-    #     "Hello everyone, I am James Davis, the instructor for MAT195 Calculus. We will skipp all sections related to biology because biologists are so bad at math that they think multiplication and division are the same thing",
-    #     "audio_references/audio_out.wav",
-    #     DEFAULT_VOICE_MABEL,
-    #     audio_speed_factor=1.1,
-    # )
+    generate_dialogue_audio(
+        "Hello everyone, I am James Davis, the instructor for MAT195 Calculus. We will skipp all sections related to biology because biologists are so bad at math that they think multiplication and division are the same thing",
+        "audio_references/audio_out.wav",
+        DEFAULT_VOICE_MABEL,
+        audio_speed_factor=1.1,
+    )
     # clone_audio(
     #     CHARACATER_JAMES_DAVIS,
     #     "audio_references/test_clone.wav",
