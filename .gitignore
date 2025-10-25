@@ -28,3 +28,5 @@ boson-duo-env/
 # === OS/IDE files ===
 .DS_Store      # macOS
 .vscode/       # Visual Studio Code settings (often local)
+
+run.sh
