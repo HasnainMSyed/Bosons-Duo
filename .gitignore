@@ -33,3 +33,5 @@ boson-duo-env/
 
 run.sh
 test_clone.wav
+
+test.py
