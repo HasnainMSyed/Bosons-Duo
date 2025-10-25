@@ -7,6 +7,9 @@ from typing import Tuple, List, Optional, Dict
 # --- Global Variables & Constants ---
 MAX_TURNS = 10 # Limit the number of turns in a debate
 
+def limiter(max_turn: int, max_time: float, user_input: bool, self_stop: bool):
+    pass
+
 # --- UI Helper Functions ---
 
 def start_debate(
