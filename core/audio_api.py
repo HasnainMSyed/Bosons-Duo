@@ -8,53 +8,82 @@ from openai.types.chat import ChatCompletionMessageParam
 
 load_dotenv()
 
-# --- Configuration ---
-BOSON_API_KEY = os.getenv("BOSON_API_KEY") # Get API Keys
-BASE_URL = "https://hackathon.boson.ai/v1"
+CHARACATER_JAMES_DAVIS = "james_davis"
+CHARACTER_TO_REFERENCE_MAP = {
+    "james_davis": (
+        (
+            "After that I went on to graduate school at the Institute for Aerospace Studies "
+            "where I completed two masters and a PhD. My research area is in materials for fusion reactors. "
+            "This is an area I got interested in when I was actually an undergraduate student and I spent two summers "
+            "working up at UTIAS in the research lab which I now run. And this whole time I've been looking at various "
+            "aspects of how very high temperature plasmas in a fusion reactor interact with the materials that are "
+            "intended to keep the plasma from escaping."
+        ),
+        "audio_references/davis_trimmed.wav",
+    )
+}
+
+DEFAULT_VOICE_EN_MAN = "en_man"
+DEFAULT_VOICE_MABEL = "mabel"
+
+BOSON_API_KEY = os.getenv("BOSON_API_KEY")
+BOSON_AUDIO_ENDPOINT = os.getenv("BOSON_AUDIO_ENDPOINT")
 
 CLIENT = openai.Client(api_key=BOSON_API_KEY, base_url=BASE_URL)
 
 
-def encode_audio_to_base64(file_path: str) -> Optional[str]:
-    """Reads a local audio file and encodes it as a base64 string for API payload."""
+def encode_audio_to_base64(file_path: str) -> str:
     try:
         with open(file_path, "rb") as audio_file:
-            # Higgs V2 documentation/examples suggest passing the reference as base64
             return base64.b64encode(audio_file.read()).decode("utf-8")
     except FileNotFoundError:
         print(f"Error: Audio reference file not found at {file_path}")
         return ""
-    except Exception as e:
-        print(f"Error encoding audio file {file_path}: {e}")
-        return None
-    
-def generate_dialogue_audio():
-    pass
 
 
-# def generate_dialogue_audio(dialogue_text: str, audio_file_path: str) -> None:
-#     if not BOSON_API_KEY or not BOSON_AUDIO_ENDPOINT:
-#         print("Audio API key or endpoint not configured.")
-#         return b""
+def adjust_audio_speed(path: str, speed_factor: float):
+    with wave.open(path, "rb") as wav:
+        params = wav.getparams()
+        frames = wav.readframes(params.nframes)
 
-#     response = CLIENT.audio.speech.create(
-#         model="higgs-audio-generation-Hackathon",
-#         voice="belinda",
-#         input=dialogue_text,
-#         response_format="pcm",
-#     )
+    with wave.open(path, "wb") as out_wav:
+        out_wav.setnchannels(params.nchannels)
+        out_wav.setsampwidth(params.sampwidth)
+        out_wav.setframerate(int(params.framerate * speed_factor))
+        out_wav.writeframes(frames)
 
-#     num_channels = 1
-#     sample_width = 2
-#     sample_rate = 24000
 
-#     pcm_data = response.content
+def generate_dialogue_audio(
+    dialogue_text: str,
+    audio_file_path: str,
+    voice: str,
+    audio_speed_factor: float = 1.0,
+) -> None:
+    if not BOSON_API_KEY or not BOSON_AUDIO_ENDPOINT:
+        print("Audio API key or endpoint not configured.")
+        return b""
 
-#     with wave.open(audio_file_path, "wb") as wav:
-#         wav.setnchannels(num_channels)
-#         wav.setsampwidth(sample_width)
-#         wav.setframerate(sample_rate)
-#         wav.writeframes(pcm_data)
+    response = CLIENT.audio.speech.create(
+        model="higgs-audio-generation-Hackathon",
+        voice=voice,
+        input=dialogue_text,
+        response_format="pcm",
+    )
+
+    num_channels = 1
+    sample_width = 2
+    sample_rate = 24000
+
+    pcm_data = response.content
+
+    with wave.open(audio_file_path, "wb") as wav:
+        wav.setnchannels(num_channels)
+        wav.setsampwidth(sample_width)
+        wav.setframerate(sample_rate)
+        wav.writeframes(pcm_data)
+
+    adjust_audio_speed(audio_file_path, audio_speed_factor)
+
 
 def transcribe_audio(audio_path: str) -> str:
     try:
@@ -80,44 +109,29 @@ def transcribe_audio(audio_path: str) -> str:
                     },
                 ],
             },
-        ]
-                
-        response = CLIENT.chat.completions.create(
-                model="higgs-audio-understanding-Hackathon",
-                messages=messages_payload,
-                max_completion_tokens=6000,
-                temperature=0.5
-            )
-
-        print(response.choices[0].message.content)
+        ],
+        max_completion_tokens=6000,
+    )
 
         return response.choices[0].message.content
 
-    except openai.APIError as e:
-        print(f"OpenAI API Error during transcription: {e}")
-        return f"[Transcription API Error: {e}]"
-    except FileNotFoundError:
-        print(f"Error: Audio file not found at {audio_path}")
-        return "[Transcription Error: File not found]"
-    except Exception as e:
-        print(f"An unexpected error occurred during transcription: {e}")
-        return f"[Transcription Unexpected Error: {e}]"
 
-
-def clone_audio(reference_path, reference_transcript, output_path, dialogue_text):
+def clone_audio(reference_name, output_path, dialogue_text):
     system = "You are an AI assistant that converts the tone of a speech to be similar to that of a reference audio"
     resp = CLIENT.chat.completions.create(
         model="higgs-audio-generation-Hackathon",
         messages=[
             {"role": "system", "content": system},
-            {"role": "user", "content": reference_transcript},
+            {"role": "user", "content": CHARACTER_TO_REFERENCE_MAP[reference_name][0]},
             {
                 "role": "assistant",
                 "content": [
                     {
                         "type": "input_audio",
                         "input_audio": {
-                            "data": encode_audio_to_base64(reference_path),
+                            "data": encode_audio_to_base64(
+                                CHARACTER_TO_REFERENCE_MAP[reference_name][1]
+                            ),
                             "format": "wav",
                         },
                     }
@@ -129,6 +143,9 @@ def clone_audio(reference_path, reference_transcript, output_path, dialogue_text
             },
         ],
         modalities=["text", "audio"],
+        top_p=0.95,
+        stream=False,
+        extra_body={"top_k": 50},
     )
 
     audio_b64 = resp.choices[0].message.audio.data
@@ -139,16 +156,14 @@ def generate_cloned_speech():
 
 
 if __name__ == "__main__":
-    # generate_dialogue_audio(
-    #     "Consider the vector field x. Verify the Stoke's theorem about the surface S, where S is the top half of this cylinder.",
-    #     "audio_references/test.wav",
-    # )
-    reference_text = transcribe_audio("audio_references/davis_trimmed_quarter.wav")
-    clone_audio(
-        "audio_references/davis_trimmed_quarter.wav",
-        # "it divides but works during the day at well, if you took steps to block direct sunlight or point it away from the sun",
-        reference_text,
-        "audio_references/test_clone.wav",
-        # "The average on the question is a six out of ten. If you get a bunch of monkeys to do this, they will get five out of ten. So, so you guys are only slightly better than monkeys",
-        "大家好 我是James Davis我我我我哦我哈哈哈哈一二三四五六七一加一等于二"
+    generate_dialogue_audio(
+        "Hello everyone, I am James Davis, the instructor for MAT195 Calculus. We will skipp all sections related to biology because biologists are soooooo bad at math that they think multiplication and division are the same thing",
+        "audio_references/audio_out.wav",
+        DEFAULT_VOICE_MABEL,
+        audio_speed_factor=1.1
     )
+    # clone_audio(
+    #     CHARACATER_JAMES_DAVIS,
+    #     "audio_references/test_clone.wav",
+    #     "Hello everyone, I am James Davis, the instructor for MAT195 Calculus. We will skipp all sections related to biology because biologists are soooooo bad at math that they think multiplication and division are the same thing",
+    # )
