@@ -27,6 +27,9 @@ def encode_audio_to_base64(file_path: str) -> Optional[str]:
     except Exception as e:
         print(f"Error encoding audio file {file_path}: {e}")
         return None
+    
+def generate_dialogue_audio():
+    pass
 
 
 # def generate_dialogue_audio(dialogue_text: str, audio_file_path: str) -> None:

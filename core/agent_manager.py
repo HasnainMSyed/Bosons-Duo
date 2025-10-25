@@ -1,4 +1,4 @@
-from llm_api import LLMAgent
+from .llm_api import LLMAgent
 from typing import List
 
 LLM_MODEL_NAME = "Qwen3-32B-non-thinking-Hackathon"
