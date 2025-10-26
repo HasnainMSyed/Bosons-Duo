@@ -16,6 +16,7 @@ CORS(app)
 
 manager = None
 initial_topic = ""
+global_context = ""
 last_response = ""
 audio_file_paths = []
 
@@ -65,56 +66,71 @@ def setup_debate():
 # --- Modified Endpoint: Test (Starts Debate) ---
 @app.route("/api/test", methods=["POST"])
 def start_turn():
-    global manager, initial_topic, last_response, global_context, audio_file_paths # Include global_context
+    global manager, initial_topic, last_response, global_context, audio_file_paths
     data = request.get_json()
 
-    # --- Setup/Reset Logic ---
+    # Simplified LLM turn execution (using prompts from frontend Step 2)
     prompt_1 = data['agent_1']
     prompt_2 = data['agent_2']
-    end = data['end']
-
-    if end:
-        manager = None
-        initial_topic = ""
-        global_context = "" # <-- NEW: Reset context
-        return jsonify({"message": "Debate session ended."}) # Return early if ending
-
-    if manager is None:
-        audio_file_paths = [] 
-        # Initialize AgentManager with stored topic and context
-        context_prompt = f"Using the following context information: --- {global_context} ---, start the debate on the topic: {initial_topic}" if global_context else initial_topic
-        
-        # NOTE: AgentManager needs to be updated to accept the personas and context
-        # For now, we pass prompt_1 and prompt_2 as the INITIAL prompt text for the debate,
-        # but the ideal implementation would have AgentManager.__init__ accept the personas
-        # and run_turn accept the context for the first turn.
-        
-        manager = AgentManager(prompt_1, prompt_2) # Assume AgentManager now takes personas
-        last_response = context_prompt # Start the debate prompt
     
-    # --- Turn Logic ---
+    if manager is None:
+        audio_file_paths = []
+        # Initialize AgentManager with stored personas (using frontend input for now)
+        manager = AgentManager(prompt_1, prompt_2) 
+        context_prompt = f"Using the following context information: --- {global_context} ---, start the debate on the topic: {initial_topic}" if global_context else initial_topic
+        last_response = context_prompt
+        
     response1 = manager.run_turn(last_response)
     response2 = manager.run_turn(response1)
     last_response = response2
-
-    # --- Audio Generation (Generate Unique Files) ---
-    # Generate unique filenames based on the current turn number for permanent storage
-    turn_count = len(audio_file_paths) // 2 
     
+    
+    # --- Audio Generation (CALLING NEW FUNCTION) ---
+    turn_count = len(audio_file_paths) // 2 
     file_a_path = os.path.join("audio_references", f"turn_{turn_count+1}_A.wav")
     file_b_path = os.path.join("audio_references", f"turn_{turn_count+1}_B.wav")
     
-    generate_dialogue_audio(response1, "audio_references/a.wav", DEFAULT_VOICE_MABEL, audio_speed_factor=1.1)
-    generate_dialogue_audio(response2, "audio_references/b.wav", DEFAULT_VOICE_EN_MAN, audio_speed_factor=1.1)
+    print(f"Generating turn {turn_count+1} audio...")
+    
+    # Extract clean text content (removing the "Agent X: " prefix added by the manager)
+    text_a = response1.split(":", 1)[1].strip() if ":" in response1 else response1
+    text_b = response2.split(":", 1)[1].strip() if ":" in response2 else response2
+    
+    # Call 1: Agent A's Turn (Mabel Voice)
+    generate_dialogue_audio(
+        dialogue_text=text_a,
+        audio_file_path=file_a_path,
+        voice=DEFAULT_VOICE_MABEL,
+        audio_speed_factor=1.1
+    )
 
-    audio_file_paths.append(file_a_path)
-    audio_file_paths.append(file_b_path)
-
-    # --- Return Data ---
-    with open("audio_references/a.wav", "rb") as f:
-        a_data = base64.b64encode(f.read()).decode("utf-8")
-    with open("audio_references/b.wav", "rb") as f:
-        b_data = base64.b64encode(f.read()).decode("utf-8")
+    # Call 2: Agent B's Turn (En Man Voice)
+    generate_dialogue_audio(
+        dialogue_text=text_b,
+        audio_file_path=file_b_path,
+        voice=DEFAULT_VOICE_EN_MAN,
+        audio_speed_factor=1.1
+    )
+    
+    # --- Send Data to Frontend (Safely) ---
+    a_data = ""
+    b_data = ""
+    
+    # CRITICAL FIX: Check file existence before trying to read it
+    if os.path.exists(file_a_path):
+        with open(file_a_path, "rb") as f:
+            a_data = base64.b64encode(f.read()).decode("utf-8")
+        audio_file_paths.append(file_a_path)
+    else:
+        # Log the failure clearly for the developer
+        print(f"CRITICAL: Audio file {file_a_path} failed generation or was not found.")
+    
+    if os.path.exists(file_b_path):
+        with open(file_b_path, "rb") as f:
+            b_data = base64.b64encode(f.read()).decode("utf-8")
+        audio_file_paths.append(file_b_path)
+    else:
+        print(f"CRITICAL: Audio file {file_b_path} failed generation or was not found.")
 
     return jsonify({
         "response1": response1,
@@ -152,4 +168,4 @@ def export_debate_audio():
 if __name__ == "__main__":
     # Ensure the directory for saving temporary audio/context files exists
     os.makedirs("audio_references", exist_ok=True)
-    app.run(debug=True)
+    app.run(debug=False)

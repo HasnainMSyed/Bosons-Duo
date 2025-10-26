@@ -198,7 +198,7 @@ async function goToStep2() {
     };
 
     // 3. Send the Setup Data to a New Backend Endpoint (e.g., /api/setup)
-    const setupUrl = `${baseUrl}/api/setup`; // Define a new endpoint for setup
+    const setupUrl = `${baseUrl}api/setup`; // Define a new endpoint for setup
     
     try {
         const res = await fetch(setupUrl, {
@@ -239,7 +239,7 @@ async function goToStep2() {
         agent_1 = document.getElementById('agent1').value;
         agent_2 = document.getElementById('agent2').value;
         topic_input = document.getElementById('topicInput').value;
-        const url = `${baseUrl}/api/test`
+        const url = `${baseUrl}api/test`
 
         const allProms = [];
         for (let i = 0; i < 6; i++) {
