@@ -7,8 +7,8 @@ class AgentManager:
     """Manages the two conversational agents and runs the dialogue."""
     
     # Define Agent Personas to showcase emotional range and distinct voices
-    PERSONA_A = "You are agent A, and you are "
-    PERSONA_B = "You are agent B, and you are "
+    PERSONA_A = "You are agent A, and "
+    PERSONA_B = "You are agent B, and "
     
     def __init__(self, prompt1, prompt2):
         self.PERSONA_A += prompt1
