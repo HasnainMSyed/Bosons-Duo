@@ -95,7 +95,47 @@
 <div id="debate" class="tab">
     <h2>Debate</h2>
     <div id="audio-player"></div>
+
+    <!-- Wavy loading sign -->
+    <div class="wave-loader">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
 </div>
+
+<style>
+.wave-loader {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    height: 40px;
+    margin-top: 20px;
+}
+
+.wave-loader span {
+    display: block;
+    width: 6px;
+    height: 20px;
+    margin: 0 3px;
+    background: #007bff; /* Gradio-style blue */
+    border-radius: 3px;
+    animation: wave 1s infinite;
+}
+
+.wave-loader span:nth-child(1) { animation-delay: 0s; }
+.wave-loader span:nth-child(2) { animation-delay: 0.1s; }
+.wave-loader span:nth-child(3) { animation-delay: 0.2s; }
+.wave-loader span:nth-child(4) { animation-delay: 0.3s; }
+.wave-loader span:nth-child(5) { animation-delay: 0.4s; }
+
+@keyframes wave {
+    0%, 100% { transform: scaleY(0.4); }
+    50% { transform: scaleY(1); }
+}
+</style>
 
 <script>
     const baseUrl = "http://127.0.0.1:5000/";
@@ -120,47 +160,64 @@
         showTab('step2');
     }
 
-    function startDebate() {
+    function base64ToUrl(base64) {
+        const byteChars = atob(base64);
+        const byteNumbers = new Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) {
+            byteNumbers[i] = byteChars.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: "audio/wav" });
+        return URL.createObjectURL(blob);
+    }
+
+    async function startDebate() {
         console.log("Agent 1:", document.getElementById('agent1').value);
         console.log("Agent 2:", document.getElementById('agent2').value);
         showTab('debate');
-        playAudioQueue();
-    }
 
-    async function test() {
+        agent_1 = document.getElementById('agent1').value;
+        agent_2 = document.getElementById('agent2').value;
+        topic_input = document.getElementById('topicInput').value;
         const url = `${baseUrl}/api/test`
-        const res = await fetch(url);
-        console.log(await res.json());
+
+        const allProms = [];
+        for (let i = 0; i < 6; i++) {
+            const p = (async () => {
+                await new Promise(resolve => setTimeout(resolve, i * 5000));
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ agent_1, agent_2, topic_input, end: i == 4 ? true : false })
+                });
+                return res.json();
+            })();
+            allProms.push(p);
+        }
+
+        const responses = await Promise.all(allProms);
+
+        for (const [i, data] of responses.entries()) {
+            const urlA = base64ToUrl(data.a_audio);
+            const urlB = base64ToUrl(data.b_audio);
+
+            const audioA = new Audio(urlA);
+            const audioB = new Audio(urlB);
+
+            await playSequentially(audioA, audioB);
+        }
     }
 
-    test();
+    function playSequentially(audioA, audioB) {
+        return new Promise((resolve) => {
+            audioA.play().catch(console.warn);
+            audioA.onended = () => {
+                audioB.play().catch(console.warn);
+                audioB.onended = resolve;
+            };
+        });
+    }
 
-    // --- Audio Queue ---
-    // const audioQueue = [
-    //     "file1.wav",
-    //     "file2.wav",
-    //     "file3.wav"
-    // ];
-    // let currentIndex = 0;
-
-    // function playAudioQueue() {
-    //     if(audioQueue.length === 0) return;
-    //     const container = document.getElementById('audio-player');
-    //     container.innerHTML = ""; // Clear old audio
-    //     const audioEl = document.createElement('audio');
-    //     audioEl.controls = true;
-    //     container.appendChild(audioEl);
-
-    //     function playNext() {
-    //         if(currentIndex >= audioQueue.length) return;
-    //         audioEl.src = audioQueue[currentIndex];
-    //         audioEl.play();
-    //         currentIndex++;
-    //     }
-
-    //     audioEl.onended = playNext;
-    //     playNext();
-    // }
 </script>
 
 </body>
