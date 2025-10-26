@@ -70,7 +70,7 @@ with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue")) as app:
             gr.Column(scale=1)
 
     # --- Event Handling (Placeholder) ---
-    def process_step1(topic: str, context_file: Optional[Any]) -> str:
+    def process_step1(topic: str,  context_file: Optional[Any]) -> str:
         """Placeholder function for the 'Next' button."""
         print("Step 1 Data:")
         print(f"Topic: {topic}")
