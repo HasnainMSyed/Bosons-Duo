@@ -151,14 +151,71 @@
         if(tabId === 'debate') document.getElementById('tabBtn3').classList.add('active');
     }
 
-    function goToStep2() {
-        console.log("Topic:", document.getElementById('topicInput').value);
-        const fileInput = document.getElementById('contextFile');
-        if(fileInput.files.length > 0) {
-            console.log("File:", fileInput.files[0].name);
-        }
-        showTab('step2');
+    function getFileBase64(file) {
+    // Helper function to read file content as Base64 for safe JSON transport
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file); // Reads as 'data:mime/type;base64,...'
+        reader.onload = () => resolve(reader.result.split(',')[1]); // Extract only the base64 part
+        reader.onerror = error => reject(error);
+    });
+}
+
+async function goToStep2() {
+    const topic = document.getElementById('topicInput').value;
+    const fileInput = document.getElementById('contextFile');
+    const file = fileInput.files[0];
+
+    if (!topic) {
+        alert("Please enter a debate topic.");
+        return;
     }
+
+    let fileContent = null;
+    let fileName = null;
+
+    // 1. Process File (if uploaded)
+    if (file) {
+        fileName = file.name;
+        // Use the helper to read the file into base64 format
+        try {
+            fileContent = await getFileBase64(file);
+        } catch(e) {
+            console.error("Error reading file:", e);
+            alert("Could not read the file. Please try again.");
+            return;
+        }
+    }
+    
+    // 2. Prepare JSON Payload for the Backend
+    const setupPayload = {
+        topic: topic,
+        file_name: fileName,
+        file_content_base64: fileContent, // Send the encoded file content
+    };
+
+    // 3. Send the Setup Data to a New Backend Endpoint (e.g., /api/setup)
+    const setupUrl = `${baseUrl}/api/setup`; // Define a new endpoint for setup
+    
+    try {
+        const res = await fetch(setupUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(setupPayload)
+        });
+        
+        if (res.ok) {
+            // Data successfully sent and saved on the server, now transition UI
+            showTab('step2');
+        } else {
+            const errorData = await res.json();
+            alert(`Setup failed on server: ${errorData.error}`);
+        }
+    } catch(e) {
+        console.error("Network error during setup:", e);
+        alert("Failed to connect to the backend server.");
+    }
+}
 
     function base64ToUrl(base64) {
         const byteChars = atob(base64);

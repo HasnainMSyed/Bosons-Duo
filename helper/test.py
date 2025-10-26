@@ -1,3 +1,4 @@
+'''
 import gradio as gr
 import random
 import time
@@ -39,3 +40,4 @@ with demo.route("Interface") as incrementer_demo:
     gr.Interface(lambda x, y: x * y, ["number", "number"], "number")
 
 demo.launch()
+'''
