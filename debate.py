@@ -1,3 +1,5 @@
+'''
+
 import gradio as gr
 import os
 from typing import Optional, Any, Tuple, List
@@ -199,3 +201,4 @@ with gr.Blocks(theme=gr.themes.Base(primary_hue="blue"), mode="dark") as demo:
 if __name__ == "__main__":
     demo.launch(share=False)
 
+'''

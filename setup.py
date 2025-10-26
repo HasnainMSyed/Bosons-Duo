@@ -1,3 +1,5 @@
+'''
+
 import gradio as gr
 import os
 from typing import Optional, Any
@@ -66,3 +68,5 @@ with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue")) as demo:
 # --- Launch the Application ---
 if __name__ == "__main__":
     demo.launch(share=False)
+
+'''
