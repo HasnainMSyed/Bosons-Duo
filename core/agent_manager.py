@@ -1,7 +1,8 @@
-from llm_api import LLMAgent
+from core.llm_api import LLMAgent
 from typing import List
 
 LLM_MODEL_NAME = "Qwen3-32B-non-thinking-Hackathon"
+# LLM_MODEL_NAME = "Qwen3-14B-Hackathon"
 
 class AgentManager:
     """Manages the two conversational agents and runs the dialogue."""
@@ -15,8 +16,8 @@ class AgentManager:
         self.PERSONA_B += prompt2
 
         # Initialize the two distinct agents
-        self.agent_a = LLMAgent(name="Agent A", persona=self.PERSONA_A, model=LLM_MODEL_NAME)
-        self.agent_b = LLMAgent(name="Agent B", persona=self.PERSONA_B, model=LLM_MODEL_NAME)
+        self.agent_a = LLMAgent(name="", persona=self.PERSONA_A, model=LLM_MODEL_NAME)
+        self.agent_b = LLMAgent(name="", persona=self.PERSONA_B, model=LLM_MODEL_NAME)
         
         # Track the current speaking agent
         self.current_speaker = self.agent_a
@@ -39,7 +40,7 @@ class AgentManager:
         listener = self.agent_b if self.current_speaker == self.agent_a else self.agent_a
 
         # The prompt for the current speaker is the previous speaker's output (or the user's input)
-        turn_prompt = f"Previous Speaker said: {prompt_text}. Respond to them in at most 150 words and continue the argument."
+        turn_prompt = f"Previous Speaker said: {prompt_text}. Respond to them in at most 30 words and continue the argument."
 
         # 1. Generate the response
         response_text = self.current_speaker.generate_response(turn_prompt)
@@ -52,6 +53,7 @@ class AgentManager:
 
         # The manager needs to return the *text* of the response so the UI can update
         # and so the audio API can be called.
+        print(f"RESPONSE: {response_text}")
         return response_text
 
     def get_full_dialogue_text(self) -> str:
