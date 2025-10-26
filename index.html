@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Dialogist</title>
+    <style>
+        body {
+            font-family: "Helvetica", "Arial", sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        h1 { color: #3b82f6; }
+
+        /* Tabs */
+        .tabs { margin-bottom: 20px; }
+        .tabs button {
+            background-color: #e5e7eb;
+            border: none;
+            padding: 10px 15px;
+            margin-right: 5px;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .tabs button.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        /* Tab panels */
+        .tab {
+            display: none;
+            background-color: white;
+            padding: 20px;
+            border-radius: 0 6px 6px 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .tab.active { display: block; }
+
+        textarea, input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        button.action-btn {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button.action-btn:hover {
+            background-color: #2563eb;
+        }
+
+        #audio-player {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🤖 The AI Dialogist</h1>
+
+<div class="tabs">
+    <button id="tabBtn1" class="active" onclick="showTab('step1')">Topic Setup</button>
+    <button id="tabBtn2" onclick="showTab('step2')">Agent Setup</button>
+    <button id="tabBtn3" onclick="showTab('debate')">Debate</button>
+</div>
+
+<!-- Step 1 -->
+<div id="step1" class="tab active">
+    <h2>Step 1: Setup Topic</h2>
+    <textarea id="topicInput" rows="3" placeholder="Enter the debate topic..."></textarea>
+    <input type="file" id="contextFile"><br>
+    <button class="action-btn" onclick="goToStep2()">Next: Configure Agents ➡️</button>
+</div>
+
+<!-- Step 2 -->
+<div id="step2" class="tab">
+    <h2>Step 2: Configure Agents</h2>
+    <textarea id="agent1" rows="3" placeholder="Describe Agent 1..."></textarea>
+    <textarea id="agent2" rows="3" placeholder="Describe Agent 2..."></textarea>
+    <button class="action-btn" onclick="startDebate()">Start Debate!</button>
+</div>
+
+<!-- Step 3 -->
+<div id="debate" class="tab">
+    <h2>Debate</h2>
+    <div id="audio-player"></div>
+</div>
+
+<script>
+    const baseUrl = "http://127.0.0.1:5000/";
+    // --- Tab switching ---
+    function showTab(tabId) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+
+        // Update tab buttons
+        document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+        if(tabId === 'step1') document.getElementById('tabBtn1').classList.add('active');
+        if(tabId === 'step2') document.getElementById('tabBtn2').classList.add('active');
+        if(tabId === 'debate') document.getElementById('tabBtn3').classList.add('active');
+    }
+
+    function goToStep2() {
+        console.log("Topic:", document.getElementById('topicInput').value);
+        const fileInput = document.getElementById('contextFile');
+        if(fileInput.files.length > 0) {
+            console.log("File:", fileInput.files[0].name);
+        }
+        showTab('step2');
+    }
+
+    function startDebate() {
+        console.log("Agent 1:", document.getElementById('agent1').value);
+        console.log("Agent 2:", document.getElementById('agent2').value);
+        showTab('debate');
+        playAudioQueue();
+    }
+
+    async function test() {
+        const url = `${baseUrl}/api/test`
+        const res = await fetch(url);
+        console.log(await res.json());
+    }
+
+    test();
+
+    // --- Audio Queue ---
+    // const audioQueue = [
+    //     "file1.wav",
+    //     "file2.wav",
+    //     "file3.wav"
+    // ];
+    // let currentIndex = 0;
+
+    // function playAudioQueue() {
+    //     if(audioQueue.length === 0) return;
+    //     const container = document.getElementById('audio-player');
+    //     container.innerHTML = ""; // Clear old audio
+    //     const audioEl = document.createElement('audio');
+    //     audioEl.controls = true;
+    //     container.appendChild(audioEl);
+
+    //     function playNext() {
+    //         if(currentIndex >= audioQueue.length) return;
+    //         audioEl.src = audioQueue[currentIndex];
+    //         audioEl.play();
+    //         currentIndex++;
+    //     }
+
+    //     audioEl.onended = playNext;
+    //     playNext();
+    // }
+</script>
+
+</body>
+</html>
