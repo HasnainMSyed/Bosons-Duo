@@ -104,6 +104,9 @@
         <span></span>
         <span></span>
     </div>
+
+    <button class="action-btn" id="nextTurnBtn" onclick="runNextTurn()">Run Next Turn ▶️</button>
+    <button class="action-btn" id="exportBtn" onclick="exportFullDebate()">Download Full Debate (.wav) 💾</button>
 </div>
 
 <style>
@@ -273,6 +276,49 @@ async function goToStep2() {
                 audioB.onended = resolve;
             };
         });
+    }
+
+    async function exportFullDebate() {
+        document.getElementById('loader').classList.add('active');
+        const exportUrl = `${baseUrl}/api/export`; // The export endpoint
+
+        try {
+            // 1. Call the Flask export endpoint
+            const res = await fetch(exportUrl, {
+                method: "GET" // Export is a GET request
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({error: res.statusText}));
+                throw new Error(`Export API failed: ${errorData.error || res.status}`);
+            }
+
+            // 2. Get the response as a Blob (binary data)
+            const audioBlob = await res.blob();
+            
+            // 3. Create a temporary URL for the blob
+            const url = window.URL.createObjectURL(audioBlob);
+            
+            // 4. Create a temporary link element to trigger the download
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            // The download attribute should match the filename set in Flask's send_file
+            a.download = 'full_debate_podcast.wav'; 
+            
+            // 5. Append, click the link, and clean up
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            console.log("Download successfully initiated.");
+
+        } catch (error) {
+            console.error("Error during file export:", error);
+            alert(`Export failed: ${error.message}`);
+        } finally {
+            document.getElementById('loader').classList.remove('active');
+        }
     }
 
 </script>
